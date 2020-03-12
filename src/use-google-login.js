@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import loadScript from './load-script'
+import { useState, useEffect } from "react";
+import loadScript from "./load-script";
 
 const useGoogleLogin = ({
   onSuccess,
@@ -19,20 +19,21 @@ const useGoogleLogin = ({
   responseType,
   jsSrc,
   onRequest,
+  afterRequest,
   prompt
 }) => {
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, setLoaded] = useState(false);
 
   function handleSigninSuccess(res) {
     /*
       offer renamed response keys to names that match use
     */
-    const basicProfile = res.getBasicProfile()
-    const authResponse = res.getAuthResponse()
-    res.googleId = basicProfile.getId()
-    res.tokenObj = authResponse
-    res.tokenId = authResponse.id_token
-    res.accessToken = authResponse.access_token
+    const basicProfile = res.getBasicProfile();
+    const authResponse = res.getAuthResponse();
+    res.googleId = basicProfile.getId();
+    res.tokenObj = authResponse;
+    res.tokenId = authResponse.id_token;
+    res.accessToken = authResponse.access_token;
     res.profileObj = {
       googleId: basicProfile.getId(),
       imageUrl: basicProfile.getImageUrl(),
@@ -40,30 +41,37 @@ const useGoogleLogin = ({
       name: basicProfile.getName(),
       givenName: basicProfile.getGivenName(),
       familyName: basicProfile.getFamilyName()
-    }
-    onSuccess(res)
+    };
+    onSuccess(res);
   }
 
   function signIn(e) {
     if (e) {
-      e.preventDefault() // to prevent submit if used within form
+      e.preventDefault(); // to prevent submit if used within form
     }
     if (loaded) {
-      const auth2 = window.gapi.auth2.getAuthInstance()
+      const auth2 = window.gapi.auth2.getAuthInstance();
       const options = {
         prompt
-      }
-      onRequest()
-      if (responseType === 'code') {
-        auth2.grantOfflineAccess(options).then(res => onSuccess(res), err => onFailure(err))
+      };
+      onRequest();
+      if (responseType === "code") {
+        auth2.grantOfflineAccess(options).then(
+          res => onSuccess(res),
+          err => onFailure(err)
+        );
       } else {
-        auth2.signIn(options).then(res => handleSigninSuccess(res), err => onFailure(err))
+        auth2.signIn(options).then(
+          res => handleSigninSuccess(res),
+          err => onFailure(err)
+        );
       }
+      afterRequest();
     }
   }
 
   useEffect(() => {
-    loadScript(document, 'script', 'google-login', jsSrc, () => {
+    loadScript(document, "script", "google-login", jsSrc, () => {
       const params = {
         client_id: clientId,
         cookie_policy: cookiePolicy,
@@ -75,35 +83,35 @@ const useGoogleLogin = ({
         redirect_uri: redirectUri,
         scope,
         access_type: accessType
+      };
+
+      if (responseType === "code") {
+        params.access_type = "offline";
       }
 
-      if (responseType === 'code') {
-        params.access_type = 'offline'
-      }
-
-      window.gapi.load('auth2', () => {
-        setLoaded(true)
+      window.gapi.load("auth2", () => {
+        setLoaded(true);
         if (!window.gapi.auth2.getAuthInstance()) {
           window.gapi.auth2.init(params).then(
             res => {
               if (isSignedIn && res.isSignedIn.get()) {
-                handleSigninSuccess(res.currentUser.get())
+                handleSigninSuccess(res.currentUser.get());
               }
             },
             err => onFailure(err)
-          )
+          );
         }
-      })
-    })
-  }, [])
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (autoLoad) {
-      signIn()
+      signIn();
     }
-  }, [loaded])
+  }, [loaded]);
 
-  return { signIn, loaded }
-}
+  return { signIn, loaded };
+};
 
-export default useGoogleLogin
+export default useGoogleLogin;
